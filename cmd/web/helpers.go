@@ -45,7 +45,6 @@ func (app *application) render(w http.ResponseWriter, status int, page string, d
 	// Initialise buffer to simulate response
 	buf := new(bytes.Buffer)
 
-
 	// exec template
 	err := ts.ExecuteTemplate(buf, "base", data)
 	if err != nil {
@@ -64,6 +63,8 @@ func (app *application) render(w http.ResponseWriter, status int, page string, d
 func (app *application) newTemplateData(r *http.Request) *templateData {
 	return &templateData{
 		CurrentYear: time.Now().Year(),
+		// automate display of flash messages
+		Flash: app.sessionManager.PopString(r.Context(), "flash"),
 	}
 }
 

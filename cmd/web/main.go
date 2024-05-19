@@ -7,8 +7,11 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/Danvs60/snippetbox/internal/models"
+	"github.com/alexedwards/scs/mysqlstore"
+	"github.com/alexedwards/scs/v2"
 	"github.com/go-playground/form/v4"
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -16,11 +19,12 @@ import (
 // Define an application struct to hold application-wide dependencies
 // This is for dependency injection to avoid using global variables
 type application struct {
-	errorLog      *log.Logger
-	infoLog       *log.Logger
-	snippets      *models.SnippetModel
-	templateCache map[string]*template.Template
-	formDecoder   *form.Decoder
+	errorLog       *log.Logger
+	infoLog        *log.Logger
+	snippets       *models.SnippetModel
+	templateCache  map[string]*template.Template
+	formDecoder    *form.Decoder
+	sessionManager *scs.SessionManager
 }
 
 func main() {
@@ -48,13 +52,24 @@ func main() {
 	// initialise decoder
 	formDecoder := form.NewDecoder()
 
+	// initialise new session manager
+	// uses MySQL as session store
+	// sessions expire in 12 hours (lifetime)
+	sessionManager := scs.New() // returns a pointer to the s.manager
+	sessionManager.Store = mysqlstore.New(db)
+	sessionManager.Lifetime = 12 * time.Hour
+
+	// session cookie sent only over https
+	sessionManager.Cookie.Secure = true
+
 	// Initialise application var, the dependency container
 	app := &application{
-		errorLog:      errorLog,
-		infoLog:       infoLog,
-		snippets:      &models.SnippetModel{DB: db},
-		templateCache: templateCache,
-		formDecoder:   formDecoder,
+		errorLog:       errorLog,
+		infoLog:        infoLog,
+		snippets:       &models.SnippetModel{DB: db},
+		templateCache:  templateCache,
+		formDecoder:    formDecoder,
+		sessionManager: sessionManager,
 	}
 
 	// Use ListenAndServe() to start a new web server.
@@ -74,7 +89,7 @@ func main() {
 		Handler:  app.routes(),
 	}
 	app.infoLog.Printf("Starting server on %s", srv.Addr)
-	err = srv.ListenAndServe()
+	err = srv.ListenAndServeTLS("./tls/cert.pem", "./tls/key.pem")
 	errorLog.Fatal(err)
 }
 
