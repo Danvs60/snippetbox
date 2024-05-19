@@ -2,10 +2,13 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"net/http"
 	"runtime/debug"
 	"time"
+
+	"github.com/go-playground/form/v4"
 )
 
 // Server error helper writes error message and stack trace
@@ -62,4 +65,28 @@ func (app *application) newTemplateData(r *http.Request) *templateData {
 	return &templateData{
 		CurrentYear: time.Now().Year(),
 	}
+}
+
+func (app *application) decodePostForm(r *http.Request, dst any) error {
+	err := r.ParseForm()
+	if err != nil {
+		return err
+	}
+
+	// Call decoder
+	err = app.formDecoder.Decode(dst, r.PostForm)
+	if err != nil {
+		// check if invalid
+		var invalidDecoderError *form.InvalidDecoderError
+
+		// panic if invalid target destination
+		if errors.As(err, &invalidDecoderError) {
+			panic(err)
+		}
+
+		// all other errors
+		return err
+	}
+
+	return nil
 }
