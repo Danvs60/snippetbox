@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"strings"
-	"unicode/utf8"
 
 	"github.com/Danvs60/snippetbox/internal/models"
 	"github.com/Danvs60/snippetbox/internal/validator"
@@ -32,7 +30,7 @@ func (app *application) home(w http.ResponseWriter, r *http.Request) {
 		app.serverError(w, err)
 		return
 	}
-	
+
 	data := app.newTemplateData(r)
 	data.Snippets = snippets
 
@@ -129,11 +127,12 @@ func (app *application) snippetView(w http.ResponseWriter, r *http.Request) {
 }
 
 // form struct to represent data and validation
+// implemented with decoder, which extracts values from HTML form
 type snippetCreateForm struct {
-	Title string
-	Content string
-	Expires int
-	validator.Validator
+	Title               string     `form:"title"`
+	Content             string     `form:"content"`
+	Expires             int        `form:"expires"`
+	validator.Validator `form:"-"` // - tells decoder to ignore a field during decoding
 }
 
 func (app *application) snippetCreate(w http.ResponseWriter, r *http.Request) {
@@ -152,35 +151,30 @@ func (app *application) snippetCreatePost(w http.ResponseWriter, r *http.Request
 	// Check if request is POST
 	// WARNING: step not needed, httprouter does it automatically
 	/* if r.Method != http.MethodPost {
-		// let user it is not allowed to use this method
-		w.Header().Set("Allow", http.MethodPost) // WARNING: you can only set response headers before the first call to Write
+	// let user it is not allowed to use this method
+	w.Header().Set("Allow", http.MethodPost) // WARNING: you can only set response headers before the first call to Write
 
-		/* w.WriteHeader(405) // WARNING: can only call once per response
-		// NOTE: if WriteHeader is not called, first time we 'Write' it will auto call to res = 200
-		w.Write([]byte("Method not allowed")) */
+	/* w.WriteHeader(405) // WARNING: can only call once per response
+	// NOTE: if WriteHeader is not called, first time we 'Write' it will auto call to res = 200
+	w.Write([]byte("Method not allowed")) */
 
-		// This is better done with http Error
-		// app.clientError(w, http.StatusMethodNotAllowed)
-		// return
-	
+	// This is better done with http Error
+	// app.clientError(w, http.StatusMethodNotAllowed)
+	// return
+
 	err := r.ParseForm()
 	if err != nil {
 		app.clientError(w, http.StatusBadRequest)
 		return
 	}
 
-	// postform.get returns a string,
-	// but db expects an integer so need to convert
-	expires, err := strconv.Atoi(r.PostForm.Get("expires"))
+	var form snippetCreateForm
+
+	// let decoder fill the form variable
+	err = app.formDecoder.Decode(&form, r.PostForm)
 	if err != nil {
 		app.clientError(w, http.StatusBadRequest)
 		return
-	}
-
-	form := snippetCreateForm{
-		Title: r.PostForm.Get("title"),
-		Content: r.PostForm.Get("content"),
-		Expires: expires,
 	}
 
 	form.CheckField(validator.NotBlank(form.Title), "title", "This field cannot be blank")

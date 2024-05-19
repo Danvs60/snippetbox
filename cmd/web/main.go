@@ -9,18 +9,19 @@ import (
 	"os"
 
 	"github.com/Danvs60/snippetbox/internal/models"
+	"github.com/go-playground/form/v4"
 	_ "github.com/go-sql-driver/mysql"
 )
 
 // Define an application struct to hold application-wide dependencies
 // This is for dependency injection to avoid using global variables
 type application struct {
-	errorLog *log.Logger
-	infoLog  *log.Logger
-	snippets *models.SnippetModel
+	errorLog      *log.Logger
+	infoLog       *log.Logger
+	snippets      *models.SnippetModel
 	templateCache map[string]*template.Template
+	formDecoder   *form.Decoder
 }
-
 
 func main() {
 	addr := flag.String("addr", ":4000", "HTTP Network Address")
@@ -38,18 +39,22 @@ func main() {
 	}
 	defer db.Close()
 
-
 	// Template cache...
 	templateCache, err := newTemplateCache()
 	if err != nil {
 		errorLog.Fatal(err)
 	}
+
+	// initialise decoder
+	formDecoder := form.NewDecoder()
+
 	// Initialise application var, the dependency container
 	app := &application{
-		errorLog: errorLog,
-		infoLog:  infoLog,
-		snippets: &models.SnippetModel{DB: db},
+		errorLog:      errorLog,
+		infoLog:       infoLog,
+		snippets:      &models.SnippetModel{DB: db},
 		templateCache: templateCache,
+		formDecoder:   formDecoder,
 	}
 
 	// Use ListenAndServe() to start a new web server.
