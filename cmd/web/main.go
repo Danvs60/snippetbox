@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"database/sql"
 	"flag"
 	"html/template"
@@ -72,21 +73,18 @@ func main() {
 		sessionManager: sessionManager,
 	}
 
-	// Use ListenAndServe() to start a new web server.
-	// Takes in 2 parameters:
-	//	1. the TCP network address to listen on
-	//	2. and the servemux (mapper of URLs) (actually it accepts a Handler [interface that implements ServeHTTP]
-	//		as ServeMux does actually implement a ServeHTTP function, then it is fine to use as parameter
-	//	think of mux as a handler for handlers
-	// If mux returns an error we log it.
-
-	// err := http.ListenAndServe(*addr, mux)
+	// initialise tls.Config to hold non-default TLS settings
+	// allow only elliptic curves with assembly implementations
+	tlsConfig := &tls.Config{
+		CurvePreferences: []tls.CurveID{tls.X25519, tls.CurveP256},
+	}
 
 	// initialise new http.Server to use custom logger
 	srv := &http.Server{
 		Addr:     *addr,
 		ErrorLog: errorLog,
 		Handler:  app.routes(),
+		TLSConfig: tlsConfig,
 	}
 	app.infoLog.Printf("Starting server on %s", srv.Addr)
 	err = srv.ListenAndServeTLS("./tls/cert.pem", "./tls/key.pem")
