@@ -1,11 +1,14 @@
 package validator
 
 import (
+	"regexp"
 	"strings"
 	"unicode/utf8"
 )
 
-// Validator map for validation errors for forms
+// W3C compatible
+var EmailRX = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+\\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
+
 type Validator struct {
 	FieldErrors map[string]string
 }
@@ -49,4 +52,12 @@ func PermittedInt(value int, permittedValues ...int) bool {
 	}
 
 	return false
+}
+
+func MinChars(value string, n int) bool {
+	return utf8.RuneCountInString(value) >= n
+}
+
+func Matches(value string, rx *regexp.Regexp) bool {
+	return rx.MatchString(value)
 }
