@@ -9,11 +9,12 @@ import (
 )
 
 type templateData struct {
-	CurrentYear int
-	Snippet *models.Snippet
-	Snippets []*models.Snippet
-	Form any
-	Flash string
+	CurrentYear     int
+	Snippet         *models.Snippet
+	Snippets        []*models.Snippet
+	Form            any
+	Flash           string
+	IsAuthenticated bool
 }
 
 func humanDate(t time.Time) string {
@@ -38,7 +39,7 @@ func newTemplateCache() (map[string]*template.Template, error) {
 		name := filepath.Base(page)
 
 		// 1. create empty template set
-		// 2. register funcmap with Funcs 
+		// 2. register funcmap with Funcs
 		// 3. parse as normal
 		ts, err := template.New(name).Funcs(functions).ParseFiles("./ui/html/base.tmpl")
 		if err != nil {
