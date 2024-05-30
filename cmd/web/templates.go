@@ -2,10 +2,12 @@ package main
 
 import (
 	"html/template"
+	"io/fs"
 	"path/filepath"
 	"time"
 
 	"github.com/Danvs60/snippetbox/internal/models"
+	"github.com/Danvs60/snippetbox/ui"
 )
 
 type templateData struct {
@@ -30,7 +32,7 @@ func newTemplateCache() (map[string]*template.Template, error) {
 	cache := map[string]*template.Template{}
 
 	// get slice of all file paths matching pattern
-	pages, err := filepath.Glob("./ui/html/pages/*.tmpl")
+	pages, err := fs.Glob(ui.Files, "html/pages/*.tmpl")
 	if err != nil {
 		return nil, err
 	}
@@ -39,21 +41,13 @@ func newTemplateCache() (map[string]*template.Template, error) {
 		// extract just file name from full path (e.g. home.tmpl)
 		name := filepath.Base(page)
 
-		// 1. create empty template set
-		// 2. register funcmap with Funcs
-		// 3. parse as normal
-		ts, err := template.New(name).Funcs(functions).ParseFiles("./ui/html/base.tmpl")
-		if err != nil {
-			return nil, err
+		patterns := []string{
+			"html/base.tmpl",
+			"html/partials/*.tmpl",
+			page,
 		}
 
-		// parse all partial templates
-		ts, err = ts.ParseGlob("./ui/html/partials/*.tmpl")
-		if err != nil {
-			return nil, err
-		}
-
-		ts, err = ts.ParseFiles(page)
+		ts, err := template.New(name).Funcs(functions).ParseFS(ui.Files, patterns...)
 		if err != nil {
 			return nil, err
 		}
