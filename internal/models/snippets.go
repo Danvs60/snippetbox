@@ -15,6 +15,11 @@ type Snippet struct {
 	Created time.Time
 	Expires time.Time
 }
+type SnippetModelInterface interface {
+	Insert(title string, content string, expires int) (int, error)
+	Get(id int) (*Snippet, error)
+	Latest() ([]*Snippet, error)
+}
 
 // Wrapper for a sql.DB connection pool
 type SnippetModel struct {
@@ -28,10 +33,10 @@ func (m *SnippetModel) Insert(title string, content string, expires int) (int, e
 	stmt := `INSERT INTO snippets (title, content, created, expires)
 	VALUES(?, ?, UTC_TIMESTAMP(), DATE_ADD(UTC_TIMESTAMP(), INTERVAL ? DAY))`
 
-	// Use exec method from embedded connection pool for 
+	// Use exec method from embedded connection pool for
 	// non-query (not SELECT) statements
 	result, err := m.DB.Exec(stmt, title, content, expires)
-	// NOTE: can also ignore results 
+	// NOTE: can also ignore results
 	// _, err := ...
 	if err != nil {
 		return 0, err

@@ -179,7 +179,6 @@ type userLoginForm struct {
 	validator.Validator `form:"-"`
 }
 
-
 func (app *application) userLogin(w http.ResponseWriter, r *http.Request) {
 	data := app.newTemplateData(r)
 	data.Form = userLoginForm{}
@@ -219,7 +218,7 @@ func (app *application) userLoginPost(w http.ResponseWriter, r *http.Request) {
 		} else {
 			app.serverError(w, err)
 		}
-		return 
+		return
 	}
 
 	// Renew token to refresh current session ID. Good practice to generate new session id when user authenticates or changes privileges
@@ -248,4 +247,8 @@ func (app *application) userLogoutPost(w http.ResponseWriter, r *http.Request) {
 	app.sessionManager.Put(r.Context(), "flash", "You've been logged out successfully!")
 
 	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+func ping(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte("OK"))
 }

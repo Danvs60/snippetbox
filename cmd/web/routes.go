@@ -24,8 +24,10 @@ func (app *application) routes() http.Handler {
 	// here we want it to be a subtree path, so add a trailing /
 	// static files do not need a stateful session (so no sessionManager)
 	fileServer := http.FileServer(http.FS(ui.Files))
-
 	router.Handler(http.MethodGet, "/static/*filepath", fileServer)
+
+	// Ping route for testing
+	router.HandlerFunc(http.MethodGet, "/ping", ping)
 
 	// unprotected application routes
 	dynamic := alice.New(app.sessionManager.LoadAndSave, noSurf, app.authenticate)
